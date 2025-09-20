@@ -17,7 +17,7 @@ describe("Flashloans", () => {
     // Give the flash loan protocol some mock tokens it can lend out
     mintMockToken(1_000_000_000, flasher);
     // Give the flash loan protocol some STX it can lend out
-    simnet.transferSTX(100_000_000n, flasher.value.toString(), alice);
+    simnet.transferSTX(200_000, flasher.value.toString(), deployer);
 
     // Initialize the mock flash recipient contract
     simnet.callPublicFn(
@@ -29,9 +29,9 @@ describe("Flashloans", () => {
   });
 
   it("can flashloan STX and pay back", () => {
-    // Send 500 STX to the mock flash recipient
-    // so it has money to pay back the flashloan with fees
-    simnet.transferSTX(500n, mockFlashRecipient.value.toString(), alice);
+    // Send enough STX to the mock flash recipient to pay back the flashloan with fees
+    // 100_000 + 0.5% interest = 100_500 STX needed
+    simnet.transferSTX(101_000, mockFlashRecipient.value.toString(), deployer);
 
     const flashStxResult = simnet.callPublicFn(
       "flasher",
@@ -84,9 +84,9 @@ describe("Flashloans", () => {
   });
 
   it("can flashloan SIP010 token and pay back", () => {
-    // Send 1000 TOKEN to the mock flash recipient
-    // so it has money to pay back the flashloan with fees
-    mintMockToken(1_000, mockFlashRecipient);
+    // Send enough TOKENs to the mock flash recipient to pay back the flashloan with fees
+    // 100_000 + 1% interest = 101_000 tokens needed
+    mintMockToken(102_000, mockFlashRecipient);
 
     const flashSip010Result = simnet.callPublicFn(
       "flasher",
@@ -118,8 +118,8 @@ describe("Flashloans", () => {
   it("no token lost if cannot pay back flashloan", () => {
     const flasherOriginalTokenBalance = simnet
       .getAssetsMap()
-      .get(".mock-token.mock-token")!
-      .get(flasher.value)!;
+      .get(`${deployer}.mock-token::mock-token`)
+      ?.get(flasher.value) ?? 0;
 
     const flashSip010Result = simnet.callPublicFn(
       "flasher",
@@ -132,8 +132,8 @@ describe("Flashloans", () => {
 
     const flasherCurrentTokenBalance = simnet
       .getAssetsMap()
-      .get(".mock-token.mock-token")!
-      .get(flasher.value)!;
+      .get(`${deployer}.mock-token::mock-token`)
+      ?.get(flasher.value) ?? 0;
 
     expect(flasherCurrentTokenBalance).toBe(flasherOriginalTokenBalance);
   });
